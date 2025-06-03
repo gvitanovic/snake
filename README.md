@@ -48,3 +48,65 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# Snake Game (React Native + Expo)
+
+A modular, feature-based, and atomic-design Snake game built with React Native and Expo.
+
+## Features
+
+- Touch controls (mobile) and keyboard controls (web)
+- Randomized snake, fruits (🥒), bombs (💣), hearts (❤️), and time boosters (⏱️)
+- Player name entry and start countdown
+- Modular, scalable codebase using feature-based and atomic design
+
+## Project Structure
+
+```
+/app
+  /features
+    /snake
+      /components
+        /atoms
+        /molecules
+        /organisms
+      SnakeGame.tsx
+      snakeUtils.ts
+      snakeTypes.ts
+      snakeStyles.ts
+  /constants
+    gameConstants.ts
+  App.tsx
+```
+
+## Getting Started
+
+### 1. Install dependencies
+
+```sh
+npm install
+```
+
+### 2. Start the app
+
+```sh
+npx expo start
+```
+
+- Scan the QR code with Expo Go (iOS/Android) or run in a simulator/emulator.
+- For web: press `w` in the Expo CLI and open in your browser.
+
+## Build for Production
+
+- [Expo build docs](https://docs.expo.dev/build/introduction/)
+- For app stores, use [EAS Build](https://docs.expo.dev/eas-build/introduction/).
+
+## Code Style
+
+- **Feature-based**: All logic, types, and styles for the snake game are in `/features/snake`.
+- **Atomic design**: UI is split into atoms (Cell), molecules (Board), and organisms (PauseModal, NameInput).
+- **Constants** are shared via `/constants`.
+
+## License
+
+MIT
