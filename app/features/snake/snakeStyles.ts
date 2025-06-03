@@ -1,0 +1,73 @@
+import { StyleSheet } from 'react-native';
+import { CELL_SIZE, GRID_SIZE } from '../../constants/gameConstants';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  board: { width: CELL_SIZE * GRID_SIZE, height: CELL_SIZE * GRID_SIZE },
+  row: { flexDirection: 'row' },
+  cell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    backgroundColor: '#eee',
+    borderWidth: 0.5,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  snake: { backgroundColor: 'green' },
+  food: { backgroundColor: 'rgba(9, 125, 9, 0.3)' },
+  bomb: { backgroundColor: '#333' },
+  heart: { backgroundColor: '#ffe6ea' },
+  timeBooster: { backgroundColor: '#e0f7fa' },
+  icon: { fontSize: 14, textAlign: 'center' },
+  controls: { marginTop: 20, alignItems: 'center' },
+  btn: { fontSize: 30, padding: 10 },
+  over: { fontSize: 18, color: 'red', marginTop: 20 },
+  lives: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    borderRadius: 8,
+    padding: 10,
+    width: 200,
+    fontSize: 18,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    textAlign: 'center',
+  },
+  startBtn: {
+    backgroundColor: '#4caf50',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
+  startBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  pauseTimer: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#2196f3',
+  },
+});
