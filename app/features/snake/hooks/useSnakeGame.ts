@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-    GRID_SIZE, INIT_LIVES, INIT_SPEED,
-    NUM_BOMBS, NUM_FRUITS, NUM_HEARTS,
-    TIME_BOOST_DURATION
+    INIT_LIVES, INIT_SPEED, TIME_BOOST_DURATION
 } from '../../../constants/gameConstants';
+import { Coordinates } from '../snakeTypes';
 import {
-    getUniqueRandomPos,
-    randomPos, randomSnake
+    randomSnake
 } from '../snakeUtils';
+import { useBoardItems } from './useBoardItems';
+import { useSnakeMovement } from './useSnakeMovement';
+import { useTimer } from './useTimer';
 
 export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) {
   const [snake, setSnake] = useState(randomSnake());
-  const [fruits, setFruits] = useState(Array(NUM_FRUITS).fill(0).map(randomPos));
-  const [bombs, setBombs] = useState(Array(NUM_BOMBS).fill(0).map(randomPos));
-  const [hearts, setHearts] = useState(Array(NUM_HEARTS).fill(0).map(randomPos));
-  const [timeBooster, setTimeBooster] = useState(randomPos());
+  const [fruits, setFruits] = useState<Coordinates[]>([]);
+  const [bombs, setBombs] = useState<Coordinates[]>([]);
+  const [hearts, setHearts] = useState<Coordinates[]>([]);
+  const [timeBooster, setTimeBooster] = useState({ x: 0, y: 0 });
   const [dir, setDir] = useState({ x: 1, y: 0 });
   const [isGameOver, setIsGameOver] = useState(false);
   const [lives, setLives] = useState(INIT_LIVES);
@@ -23,59 +24,49 @@ export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) 
   const [timeBoostActive, setTimeBoostActive] = useState(false);
   const [timeBoostEnd, setTimeBoostEnd] = useState<number | null>(null);
 
-  const moveInterval = useRef<number | undefined>(undefined);
-  const timerInterval = useRef<number | undefined>(undefined);
+  const { placeItems } = useBoardItems();
+  const { changeDir, isCollision } = useSnakeMovement(snake, dir, setDir);
+
+  // Place items only on game start or restart
+  useEffect(() => {
+    if (nameEntered && !showCountdownModal) {
+      const { fruits, bombs, hearts, booster } = placeItems(snake);
+      setFruits(fruits);
+      setBombs(bombs);
+      setHearts(hearts);
+      setTimeBooster(booster);
+    }
+    // eslint-disable-next-line
+  }, [nameEntered]); // Only when game starts
 
   // Timer effect
-  useEffect(() => {
-    if (!isGameOver && !showCountdownModal && nameEntered) {
-      if (timerInterval.current !== undefined) clearInterval(timerInterval.current);
-      timerInterval.current = setInterval(() => {
-        setTimer(t => t + 1);
-        if (timeBoostActive && timeBoostEnd && Date.now() > timeBoostEnd) {
-          setTimeBoostActive(false);
-          setSpeed(s => Math.min(INIT_SPEED, s + 50));
-        }
-      }, 1000);
+  useTimer(!isGameOver && !showCountdownModal && nameEntered, () => {
+    setTimer(t => t + 1);
+    if (timeBoostActive && timeBoostEnd && Date.now() > timeBoostEnd) {
+      setTimeBoostActive(false);
+      setSpeed(s => Math.min(INIT_SPEED, s + 50));
     }
-    return () => {
-      if (timerInterval.current !== undefined) clearInterval(timerInterval.current);
-    };
-  }, [isGameOver, timeBoostActive, timeBoostEnd, showCountdownModal, nameEntered]);
+  }, 1000);
 
   // Movement effect
   useEffect(() => {
     if (!isGameOver && !showCountdownModal && nameEntered) {
-      if (moveInterval.current !== undefined) clearInterval(moveInterval.current);
-      moveInterval.current = setInterval(moveSnake, speed);
+      const moveInt = setInterval(moveSnake, speed);
+      return () => clearInterval(moveInt);
     }
-    return () => {
-      if (moveInterval.current !== undefined) {
-        clearInterval(moveInterval.current);
-      }
-    };
-    // eslint-disable-next-line
   }, [snake, dir, isGameOver, speed, showCountdownModal, nameEntered]);
 
-  function moveSnake() {
+  const moveSnake = useCallback(() => {
     if (showCountdownModal) return;
     const newHead = {
       x: snake[0].x + dir.x,
       y: snake[0].y + dir.y,
     };
 
-    // Check collision with wall or self
-    if (
-      newHead.x < 0 ||
-      newHead.y < 0 ||
-      newHead.x >= GRID_SIZE ||
-      newHead.y >= GRID_SIZE ||
-      snake.some(seg => seg.x === newHead.x && seg.y === newHead.y)
-    ) {
+    if (isCollision(newHead)) {
       if (lives > 1) {
         setLives(lives - 1);
         setDir({ x: 1, y: 0 });
-        // Place all items uniquely
         const newSnake = (() => {
           const offset = snake.length - 2;
           const base = randomSnake();
@@ -85,39 +76,20 @@ export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) 
           }
           return base;
         })();
-        const occupied = [...newSnake];
-        const newFruits = Array(NUM_FRUITS).fill(0).map(() => {
-          const pos = getUniqueRandomPos(occupied);
-          occupied.push(pos);
-          return pos;
-        });
-        const newBombs = Array(NUM_BOMBS).fill(0).map(() => {
-          const pos = getUniqueRandomPos(occupied);
-          occupied.push(pos);
-          return pos;
-        });
-        const newHearts = Array(NUM_HEARTS).fill(0).map(() => {
-          const pos = getUniqueRandomPos(occupied);
-          occupied.push(pos);
-          return pos;
-        });
-        const boosterPos = getUniqueRandomPos(occupied);
-
+        const { fruits, bombs, hearts, booster } = placeItems(newSnake);
         setSnake(newSnake);
-        setFruits(newFruits);
-        setBombs(newBombs);
-        setHearts(newHearts);
-        setTimeBooster(boosterPos);
+        setFruits(fruits);
+        setBombs(bombs);
+        setHearts(hearts);
+        setTimeBooster(booster);
         setSpeed(prev => Math.max(50, prev - 20));
       } else {
         setIsGameOver(true);
         setLives(0);
-        clearInterval(moveInterval.current);
       }
       return;
     }
 
-    // Check for fruit, bomb, heart, time booster
     let ateFruitIdx = fruits.findIndex(f => f.x === newHead.x && f.y === newHead.y);
     let ateBombIdx = bombs.findIndex(b => b.x === newHead.x && b.y === newHead.y);
     let ateHeartIdx = hearts.findIndex(h => h.x === newHead.x && h.y === newHead.y);
@@ -126,7 +98,7 @@ export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) 
     let newSnake = [newHead, ...snake];
 
     if (ateFruitIdx !== -1) {
-      setFruits(fruits.map((f, i) => (i === ateFruitIdx ? getUniqueRandomPos([...newSnake, ...fruits, ...bombs, ...hearts, timeBooster]) : f)));
+      setFruits(fruits.map((f, i) => (i === ateFruitIdx ? placeItems(newSnake).fruits[0] : f)));
       if (((snake.length - 1) % 3) === 0) setSpeed(s => Math.max(50, s - 20));
     } else {
       newSnake.pop();
@@ -135,68 +107,48 @@ export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) 
     if (ateBombIdx !== -1) {
       setLives(l => Math.max(0, l - 1));
       setSpeed(s => Math.max(50, s - 30));
-      setBombs(bombs.map((b, i) => (i === ateBombIdx ? getUniqueRandomPos([...newSnake, ...fruits, ...bombs, ...hearts, timeBooster]) : b)));
+      setBombs(bombs.map((b, i) => (i === ateBombIdx ? placeItems(newSnake).bombs[0] : b)));
       if (lives - 1 <= 0) {
         setIsGameOver(true);
         setLives(0);
-        clearInterval(moveInterval.current);
         return;
       }
     }
 
     if (ateHeartIdx !== -1) {
       setLives(l => l + 1);
-      setHearts(hearts.map((h, i) => (i === ateHeartIdx ? getUniqueRandomPos([...newSnake, ...fruits, ...bombs, ...hearts, timeBooster]) : h)));
+      setHearts(hearts.map((h, i) => (i === ateHeartIdx ? placeItems(newSnake).hearts[0] : h)));
     }
 
     if (ateTimeBooster) {
       setTimeBoostActive(true);
       setTimeBoostEnd(Date.now() + TIME_BOOST_DURATION * 1000);
       setSpeed(s => Math.max(30, s - 70));
-      setTimeBooster(getUniqueRandomPos([...newSnake, ...fruits, ...bombs, ...hearts]));
+      setTimeBooster(placeItems(newSnake).booster);
     }
 
     setSnake(newSnake);
-  }
+  }, [
+    showCountdownModal, snake, dir, isCollision, lives,
+    fruits, bombs, hearts, timeBooster, timeBoostActive, timeBoostEnd, placeItems
+  ]);
 
-  function changeDir(x: number, y: number) {
-    if ((dir.x !== 0 && x !== 0) || (dir.y !== 0 && y !== 0)) return; // Prevent reverse
-    setDir({ x, y });
-  }
-
-  function restart() {
+  const restart = useCallback(() => {
     const newSnake = randomSnake();
-    const occupied = [...newSnake];
-    const newFruits = Array(NUM_FRUITS).fill(0).map(() => {
-      const pos = getUniqueRandomPos(occupied);
-      occupied.push(pos);
-      return pos;
-    });
-    const newBombs = Array(NUM_BOMBS).fill(0).map(() => {
-      const pos = getUniqueRandomPos(occupied);
-      occupied.push(pos);
-      return pos;
-    });
-    const newHearts = Array(NUM_HEARTS).fill(0).map(() => {
-      const pos = getUniqueRandomPos(occupied);
-      occupied.push(pos);
-      return pos;
-    });
-    const boosterPos = getUniqueRandomPos(occupied);
-
+    const { fruits, bombs, hearts, booster } = placeItems(newSnake);
     setSnake(newSnake);
     setDir({ x: 1, y: 0 });
-    setFruits(newFruits);
-    setBombs(newBombs);
-    setHearts(newHearts);
-    setTimeBooster(boosterPos);
+    setFruits(fruits);
+    setBombs(bombs);
+    setHearts(hearts);
+    setTimeBooster(booster);
     setIsGameOver(false);
     setLives(INIT_LIVES);
     setSpeed(INIT_SPEED);
     setTimer(0);
     setTimeBoostActive(false);
     setTimeBoostEnd(null);
-  }
+  }, [placeItems]);
 
   return {
     snake,
