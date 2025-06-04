@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-    INIT_LIVES, INIT_SPEED, TIME_BOOST_DURATION
+  INIT_LIVES, INIT_SPEED, TIME_BOOST_DURATION
 } from '../../../constants/gameConstants';
 import { Coordinates } from '../snakeTypes';
 import {
-    randomSnake
+  randomSnake
 } from '../snakeUtils';
 import { useBoardItems } from './useBoardItems';
 import { useSnakeMovement } from './useSnakeMovement';
 import { useTimer } from './useTimer';
 
-export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) {
+export function useSnakeGame(gameStarted: boolean, nameEntered: boolean, showCountdownModal: boolean) {
   const [snake, setSnake] = useState(randomSnake());
   const [fruits, setFruits] = useState<Coordinates[]>([]);
   const [bombs, setBombs] = useState<Coordinates[]>([]);
@@ -29,19 +29,24 @@ export function useSnakeGame(nameEntered: boolean, showCountdownModal: boolean) 
 
   // Place items only on game start or restart
   useEffect(() => {
-    if (nameEntered && !showCountdownModal) {
+    if (gameStarted && !showCountdownModal) {
       const { fruits, bombs, hearts, booster } = placeItems(snake);
       setFruits(fruits);
       setBombs(bombs);
       setHearts(hearts);
       setTimeBooster(booster);
     }
-    // eslint-disable-next-line
-  }, [nameEntered]); // Only when game starts
+  }, [gameStarted, showCountdownModal, placeItems]);
 
   // Timer effect
   useTimer(!isGameOver && !showCountdownModal && nameEntered, () => {
-    setTimer(t => t + 1);
+    setTimer(t => {
+      // Boost speed every 30 seconds
+      if ((t + 1) % 30 === 0) {
+        setSpeed(s => Math.max(50, s - 50));
+      }
+      return t + 1;
+    });
     if (timeBoostActive && timeBoostEnd && Date.now() > timeBoostEnd) {
       setTimeBoostActive(false);
       setSpeed(s => Math.min(INIT_SPEED, s + 50));

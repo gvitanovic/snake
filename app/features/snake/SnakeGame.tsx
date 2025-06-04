@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, SafeAreaView, Text, TouchableOpacity } from 'react-native';
 import {
-    CELL_SIZE, GRID_SIZE
+  CELL_SIZE, GRID_SIZE
 } from '../../constants/gameConstants';
 import { useSnakeGame } from '../../features/snake/hooks/useSnakeGame';
 import Board from './components/molecules/Board';
@@ -14,10 +14,11 @@ const SnakeGame = () => {
   const [nameEntered, setNameEntered] = useState(false);
   const [showCountdownModal, setShowCountdownModal] = useState(false);
   const [pauseTimer, setPauseTimer] = useState(5);
+  const [gameStarted, setGameStarted] = useState(false);
 
   const {
     snake, fruits, bombs, hearts, timeBooster, isGameOver, lives, timer, timeBoostActive, changeDir, restart
-  } = useSnakeGame(nameEntered, showCountdownModal);
+  } = useSnakeGame(gameStarted, nameEntered, showCountdownModal);
 
   // Pause countdown effect
   useEffect(() => {
@@ -28,6 +29,7 @@ const SnakeGame = () => {
         if (t <= 1) {
           clearInterval(pauseInt);
           setShowCountdownModal(false);
+          setGameStarted(true);
         }
         return t - 1;
       });
@@ -60,6 +62,7 @@ const SnakeGame = () => {
             setNameEntered(true);
             setShowCountdownModal(true);
             setPauseTimer(5);
+            setGameStarted(false); // Reset gameStarted for new game
           }
         }}
       />
@@ -104,6 +107,7 @@ const SnakeGame = () => {
           restart();
           setShowCountdownModal(true);
           setPauseTimer(5);
+          setGameStarted(false); // Reset for restart
         }}>
           <Text style={styles.over}>Game Over. Tap to Restart.</Text>
         </TouchableOpacity>
