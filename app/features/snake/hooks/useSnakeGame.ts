@@ -36,7 +36,7 @@ export function useSnakeGame(gameStarted: boolean, nameEntered: boolean, showCou
       setHearts(hearts);
       setTimeBooster(booster);
     }
-  }, [gameStarted, showCountdownModal, placeItems, snake]);
+  }, [gameStarted, showCountdownModal, placeItems]);
 
   // Timer effect
   useTimer(!isGameOver && !showCountdownModal && nameEntered, () => {
