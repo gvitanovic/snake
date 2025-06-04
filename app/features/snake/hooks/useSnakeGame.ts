@@ -36,14 +36,14 @@ export function useSnakeGame(gameStarted: boolean, nameEntered: boolean, showCou
       setHearts(hearts);
       setTimeBooster(booster);
     }
-  }, [gameStarted, showCountdownModal, placeItems]);
+  }, [gameStarted, showCountdownModal, placeItems, snake]);
 
   // Timer effect
   useTimer(!isGameOver && !showCountdownModal && nameEntered, () => {
     setTimer(t => {
       // Boost speed every 30 seconds
       if ((t + 1) % 30 === 0) {
-        setSpeed(s => Math.max(50, s - 50));
+        setSpeed(s => Math.max(50, s - 30));
       }
       return t + 1;
     });
